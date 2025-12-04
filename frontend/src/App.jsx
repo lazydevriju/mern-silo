@@ -3,24 +3,30 @@ import axios from "axios";
 
 const API_BASE = "http://localhost:4000";
 
-// variables
 function App() {
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [filesError, setFilesError] = useState("");
 
-  // fetching from backend
+  const [selectedFile, setSelectedFile] = useState("");
+  const [expiresInMinutes, setExpiresInMinutes] = useState(15);
+  const [maxDownloads, setMaxDownloads] = useState(1);
+
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+
   const fetchFiles = async () => {
     try {
-      setLoading(true);
-      setError("");
+      setLoadingFiles(true);
+      setFilesError("");
       const res = await axios.get(`${API_BASE}/api/files`);
       setFiles(res.data.files || []);
     } catch (err) {
       console.error(err);
-      setError("Failed to load files");
+      setFilesError("Failed to load files from Silo directory");
     } finally {
-      setLoading(false);
+      setLoadingFiles(false);
     }
   };
 
@@ -28,28 +34,133 @@ function App() {
     fetchFiles();
   }, []);
 
-  // UI
+  const handleGenerateLink = async () => {
+    if (!selectedFile) {
+      setShareError("Please select a file first.");
+      return;
+    }
+
+    try {
+      setShareLoading(true);
+      setShareError("");
+      setShareUrl("");
+
+      const res = await axios.post(`${API_BASE}/api/share`, {
+        filename: selectedFile,
+        expiresInMinutes: Number(expiresInMinutes),
+        maxDownloads: Number(maxDownloads),
+      });
+
+      setShareUrl(res.data.url);
+    } catch (err) {
+      console.error(err);
+      if (err.response?.data?.error) {
+        setShareError(err.response.data.error);
+      } else {
+        setShareError("Failed to generate share link.");
+      }
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Link copied to clipboard.");
+    } catch (err) {
+      console.error("Clipboard error:", err);
+      alert("Could not copy link. Copy it manually.");
+    }
+  };
+
   return (
-    <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
-      <h1>Silo Dashboard</h1>
-      <p>Secure file sharing server</p>
+    <div style={{ padding: "20px", fontFamily: "sans-serif", maxWidth: "800px", margin: "0 auto" }}>
+      <h1>Silo</h1>
+      <p>Secure file sharing with expiring links.</p>
 
-      <button onClick={fetchFiles} style={{ marginBottom: "10px" }}>
-        Refresh files
-      </button>
+      <section style={{ marginBottom: "20px" }}>
+        <h2>Files in Silo directory</h2>
+        <button onClick={fetchFiles} disabled={loadingFiles}>
+          {loadingFiles ? "Refreshing..." : "Refresh files"}
+        </button>
+        {filesError && <p style={{ color: "red" }}>{filesError}</p>}
+        {files.length === 0 && !loadingFiles && (
+          <p>No files found. Add some files to your BASE_DIR folder.</p>
+        )}
+        {files.length > 0 && (
+          <ul>
+            {files.map((file) => (
+              <li key={file}>
+                <button
+                  onClick={() => setSelectedFile(file)}
+                  style={{
+                    border: selectedFile === file ? "2px solid #007bff" : "1px solid #ccc",
+                    background: selectedFile === file ? "#e8f0ff" : "white",
+                    padding: "4px 8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {file} {selectedFile === file && " (selected)"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-      {loading && <p>Loading files...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      <section style={{ marginBottom: "20px" }}>
+        <h2>Create secure share link</h2>
+        <p>Selected file: <strong>{selectedFile || "None"}</strong></p>
 
-      {files.length === 0 && !loading && <p>No files found in Silo folder.</p>}
+        <div style={{ marginBottom: "10px" }}>
+          <label>
+            Expires in (minutes):{" "}
+            <input
+              type="number"
+              value={expiresInMinutes}
+              onChange={(e) => setExpiresInMinutes(e.target.value)}
+              style={{ width: "80px" }}
+              min={1}
+            />
+          </label>
+        </div>
 
-      {files.length > 0 && (
-        <ul>
-          {files.map((f) => (
-            <li key={f}>{f}</li>
-          ))}
-        </ul>
-      )}
+        <div style={{ marginBottom: "10px" }}>
+          <label>
+            Max downloads:{" "}
+            <input
+              type="number"
+              value={maxDownloads}
+              onChange={(e) => setMaxDownloads(e.target.value)}
+              style={{ width: "80px" }}
+              min={1}
+            />
+          </label>
+        </div>
+
+        <button onClick={handleGenerateLink} disabled={shareLoading}>
+          {shareLoading ? "Generating..." : "Generate link"}
+        </button>
+
+        {shareError && <p style={{ color: "red" }}>{shareError}</p>}
+      </section>
+
+      <section>
+        <h2>Generated link</h2>
+        {shareUrl ? (
+          <div>
+            <p>You can share this URL:</p>
+            <code style={{ display: "block", wordBreak: "break-all", marginBottom: "10px" }}>
+              {shareUrl}
+            </code>
+            <button onClick={handleCopy}>Copy link</button>
+          </div>
+        ) : (
+          <p>No link generated yet.</p>
+        )}
+      </section>
     </div>
   );
 }
