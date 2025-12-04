@@ -96,8 +96,8 @@ function App() {
                 <button
                   onClick={() => setSelectedFile(file)}
                   style={{
-                    border: selectedFile === file ? "2px solid #007bff" : "1px solid #ccc",
-                    background: selectedFile === file ? "#e8f0ff" : "white",
+                    border: selectedFile === file ? "2px solid #ffffffff" : "0px solid #373535ff",
+                    background: selectedFile === file ? "#025bffff" : "#2e3434",
                     padding: "4px 8px",
                     cursor: "pointer",
                   }}
