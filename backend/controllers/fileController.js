@@ -1,9 +1,9 @@
 // controllers/fileController.js
 // list files in BASE_DIR
-const fs = require("fs");
-const path = require("path");
+import fs from"fs";
+import path from "path";
 
-const listFiles = (req, res) => {
+export const listFiles = (req, res) => {
   const baseDir = process.env.BASE_DIR;
 
   if (!baseDir) {
@@ -24,5 +24,3 @@ const listFiles = (req, res) => {
     res.json({ files: filtered });
   });
 };
-
-module.exports = { listFiles };

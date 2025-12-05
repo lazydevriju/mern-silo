@@ -1,9 +1,9 @@
 // routes/fileRoutes.js
-const express = require("express");
-const { listFiles } = require("../controllers/fileController");
+import express from "express";
+import { listFiles } from "../controllers/fileController.js";
 
 const router = express.Router();
 
 router.get("/", listFiles);
 
-module.exports = router;
+export default router;

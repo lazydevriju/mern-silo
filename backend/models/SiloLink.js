@@ -1,5 +1,5 @@
 // models/SiloLink.js
-const mongoose = require("mongoose");
+import mongoose from"mongoose";
 
 const SiloLinkSchema = new mongoose.Schema({
   fileName: { type: String, required: true },
@@ -10,4 +10,4 @@ const SiloLinkSchema = new mongoose.Schema({
   lastAccessedAt: { type: Date },
 });
 
-module.exports = mongoose.model("SiloLink", SiloLinkSchema);
+export default mongoose.model("SiloLink", SiloLinkSchema);

@@ -1,13 +1,14 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const chokidar = require("chokidar");
-const cors = require("cors");
-require("dotenv").config();
-const connectDB = require("./config/db");
+import express from"express";
+import http from "http";
+import { Server } from "socket.io";
+import chokidar from "chokidar";
+import cors from "cors";
+import dotenv from "dotenv";
+import connectDB from "./config/db.js";
+import fileRoutes from "./routes/fileRoutes.js"; 
+import shareRoutes from "./routes/shareRoutes.js";
 
-const fileRoutes = require("./routes/fileRoutes");
-const shareRoutes = require("./routes/shareRoutes");
+dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -34,7 +35,7 @@ app.use("/silo", shareRoutes); // This handles the download links
 // --- REAL-TIME FILE WATCHER ---
 if (BASE_DIR) {
   console.log(`👀 Watching for file changes in: ${BASE_DIR}`);
-  
+
   // FIX: typo 'watchQB' -> 'watch'
   const watcher = chokidar.watch(BASE_DIR, {
     persistent: true,
@@ -45,9 +46,9 @@ if (BASE_DIR) {
   // Emit events to frontend when files change
   watcher.on("add", (path) => {
     console.log(`File added: ${path}`);
-    io.emit("file_update", { type: "add", path }); 
+    io.emit("file_update", { type: "add", path });
   });
-  
+
   watcher.on("unlink", (path) => {
     console.log(`File removed: ${path}`);
     io.emit("file_update", { type: "remove", path });
@@ -55,11 +56,11 @@ if (BASE_DIR) {
 }
 
 // Start Server
-async function start() {
+const start = async () => {
   await connectDB();
   server.listen(PORT, () => {
-    console.log(` Silo backend running on port ${PORT}`);
+    console.log(`🚀 Silo backend running on port ${PORT}`);
   });
-}
+};
 
 start();

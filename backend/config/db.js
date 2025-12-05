@@ -1,7 +1,7 @@
 // config/db.js
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
-async function connectDB() {
+const connectDB = async () =>{
   const uri = process.env.MONGODB_URI;
 
   if (!uri) {
@@ -16,6 +16,6 @@ async function connectDB() {
     console.error("❌ MongoDB connection error:", err.message);
     process.exit(1);
   }
-}
+};
 
-module.exports = connectDB;
+export default connectDB;

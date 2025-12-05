@@ -1,6 +1,6 @@
 // routes/shareRoutes.js
-const express = require("express");
-const { createShareLink, downloadFile } = require("../controllers/shareController");
+import express from "express";
+import { createShareLink, downloadFile } from "../controllers/shareController.js";
 
 const router = express.Router();
 
@@ -10,4 +10,4 @@ router.post("/", createShareLink);
 // GET /silo/download/:token   (will be mounted under /silo)
 router.get("/download/:token", downloadFile);
 
-module.exports = router;
+export default router;

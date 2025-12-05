@@ -1,7 +1,7 @@
-const path = require("path");
-const fs = require("fs");
-const jwt = require("jsonwebtoken");
-const SiloLink = require("../models/SiloLink");
+import path from "path";
+import fs from "fs";
+import jwt from "jsonwebtoken";
+import SiloLink from "../models/SiloLink.js";
 
 // Helper: Ensure the target path is actually inside the base directory
 const isSafePath = (base, target) => {
@@ -11,7 +11,7 @@ const isSafePath = (base, target) => {
 };
 
 // Create a share link
-const createShareLink = async (req, res) => {
+export const createShareLink = async (req, res) => {
   try {
     const baseDir = process.env.BASE_DIR;
     const jwtSecret = process.env.JWT_SECRET;
@@ -70,7 +70,7 @@ const createShareLink = async (req, res) => {
 };
 
 // Download using secure token
-const downloadFile = async (req, res) => {
+export const downloadFile = async (req, res) => {
   const { token } = req.params;
   const jwtSecret = process.env.JWT_SECRET;
   const baseDir = process.env.BASE_DIR;
@@ -121,5 +121,3 @@ const downloadFile = async (req, res) => {
     return res.status(400).send("Invalid link");
   }
 };
-
-module.exports = { createShareLink, downloadFile };
