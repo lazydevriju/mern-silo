@@ -1,6 +1,6 @@
 {
   "name": "silo-backend",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,7 +9,8 @@
   "keywords": [
     "Node",
     "Expree",
-    "MongoDB"
+    "MongoDB",
+    "Docker"
   ],
   "author": "Mayukh Neogi",
   "license": "ISC",

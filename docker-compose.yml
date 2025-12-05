@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Database
+  mongo:
+    image: mongo:latest
+    container_name: silo-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  # 2. Silo Backend
+  backend:
+    build: ./backend
+    container_name: silo-backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb://mongo:27017/silo
+      - JWT_SECRET=supersecretkey123
+      - BASE_DIR=/app/media
+    depends_on:
+      - mongo
+    volumes:
+      # Mount source code for live updates
+      - ./backend:/app
+      - /app/node_modules
+      # ⚠️ CHANGE LEFT SIDE TO YOUR REAL COMPUTER FOLDER ⚠️
+      - D:\SiloFiles:/app/media
+
+  # 3. Silo Frontend
+  frontend:
+    build: ./frontend
+    container_name: silo-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE=http://localhost:4000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mongo-data:
