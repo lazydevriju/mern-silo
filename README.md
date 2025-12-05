@@ -108,28 +108,27 @@ silo/
 You do not need Node.js or MongoDB installed locally.
 All services run inside Docker containers.
 
-**1. Clone the Repository**
+1. Clone the Repository
 ```
 git clone https://github.com/lazydevriju/node-silo.git
 cd node-silo
 ```
 
-**2. Create the Environment File**
-```
+2. Create the Environment File
 Copy the example environment template:
-
+```
 cp .env.example .env
 ```
 
 Now open .env and configure the folder on YOUR computer that Silo should expose.
 
-**Windows Example**
+Windows Example
 SILO_HOST_FOLDER=C:\Users\MyName\Documents\SiloFiles
 
-**macOS / Linux Example**
+macOS / Linux Example
 SILO_HOST_FOLDER=/Users/myname/SiloFiles
 
-**Other required variables (already in .env.example)**
+Other required variables (already in .env.example)
 JWT_SECRET=my_very_secure_key
 MONGODB_URI=mongodb://mongo:27017/silo
 PORT=4000
@@ -139,7 +138,7 @@ PORT=4000
 SILO_HOST_FOLDER must point to a real folder on your local machine.
 Its contents become accessible through Silo’s secure link system.
 
-**3. Run the Entire System**
+3. Run the Entire System
 
 From the project root:
 ```
@@ -162,7 +161,7 @@ http://localhost:5173
 
 You should now see Silo’s web dashboard.
 
-**4. API Endpoints**
+4. API Endpoints
 List Files
 ```
 GET /api/files
@@ -194,7 +193,7 @@ Download count limits
 
 Path traversal prevention
 
-**5. Security: Path Traversal Protection**
+5. Security: Path Traversal Protection
 
 Silo defends against attempts like:
 
@@ -212,7 +211,7 @@ const isSafePath = (base, target) => {
 
 If a file lies outside the allowed folder, Silo will refuse access.
 
-**6. Future Improvements**
+6. Future Improvements
 
  * User Authentication (Login/Register)
 
