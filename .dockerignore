@@ -1,6 +1,20 @@
-node_modules
-dist
+# Ignore git files
 .git
+.gitignore
+
+# Ignore node_modules 
+**/node_modules
+
+# Ignore environment files 
 .env
-logs
-*.log
+.env.*
+*.env
+
+# Ignore build artifacts
+**/dist
+**/build
+
+# Ignore Docker files themselves 
+docker-compose.yml
+**/Dockerfile
+README.md
