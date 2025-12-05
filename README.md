@@ -49,13 +49,13 @@ silo/
 ├── docker-compose.yml                 # Container orchestration configuration
 ├── .gitignore                         # Git ignore rules
 ├── .gitattributes                     # Git attributes
+├── .env.example					   # Environment variables template
 ├── README.md                          # Project documentation
 │
 ├── backend/                           # Node.js Express API
 │   ├── Dockerfile                     # Backend container image
 │   ├── package.json                   # Backend dependencies
 │   ├── server.js                      # Express server & Socket.io setup
-│   ├── .env.example                   # Environment variables template
 │   │
 │   ├── config/
 │   │   └── db.js                      # MongoDB connection
