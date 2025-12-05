@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { io } from "socket.io-client";
 
 const API_BASE = "http://localhost:4000";
 
 function App() {
+  // states
   const [files, setFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [filesError, setFilesError] = useState("");
@@ -16,6 +18,20 @@ function App() {
   const [shareError, setShareError] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
 
+  // socket connection
+  useEffect(() => {
+    const socket = io(API_BASE);
+
+    // Listen for real-time updates from Chokidar
+    socket.on("file_update", () => {
+      console.log("File system changed! Refreshing list...");
+      fetchFiles(); // Auto-refresh the list
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
+  // fetch file from backend
   const fetchFiles = async () => {
     try {
       setLoadingFiles(true);

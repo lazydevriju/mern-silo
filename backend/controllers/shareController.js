@@ -1,10 +1,16 @@
-// controllers/shareController.js
 const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const SiloLink = require("../models/SiloLink");
 
-// create a share link
+// Helper: Ensure the target path is actually inside the base directory
+const isSafePath = (base, target) => {
+  const resolvedBase = path.resolve(base);
+  const resolvedTarget = path.resolve(base, target);
+  return resolvedTarget.startsWith(resolvedBase);
+};
+
+// Create a share link
 const createShareLink = async (req, res) => {
   try {
     const baseDir = process.env.BASE_DIR;
@@ -22,6 +28,11 @@ const createShareLink = async (req, res) => {
 
     if (!filename) {
       return res.status(400).json({ error: "filename is required" });
+    }
+
+    // FIX: Security check moved INSIDE the function
+    if (!isSafePath(baseDir, filename)) {
+      return res.status(403).json({ error: "Access Denied: Invalid path" });
     }
 
     const filePath = path.join(baseDir, filename);
@@ -58,7 +69,7 @@ const createShareLink = async (req, res) => {
   }
 };
 
-// download using secure token
+// Download using secure token
 const downloadFile = async (req, res) => {
   const { token } = req.params;
   const jwtSecret = process.env.JWT_SECRET;
@@ -85,6 +96,11 @@ const downloadFile = async (req, res) => {
 
     if (link.downloadsUsed >= link.maxDownloads) {
       return res.status(410).send("Download limit exceeded");
+    }
+
+    // FIX: Add security check here too (Defense in Depth)
+    if (!isSafePath(baseDir, link.fileName)) {
+        return res.status(403).send("Access Denied: Invalid file path");
     }
 
     const filePath = path.join(baseDir, link.fileName);
