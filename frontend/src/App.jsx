@@ -1,182 +1,208 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { io } from "socket.io-client";
+import { 
+  File, 
+  Link as LinkIcon, 
+  RefreshCw, 
+  Wifi, 
+  WifiOff, 
+  Copy,
+  CheckCircle,
+  HardDrive
+} from "lucide-react";
 
-const API_BASE = "http://localhost:4000";
+import { getFiles } from "./api/files";
+import { createShareLink } from "./api/share";
+import "./App.css";
+
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
-  // states
   const [files, setFiles] = useState([]);
-  const [loadingFiles, setLoadingFiles] = useState(false);
-  const [filesError, setFilesError] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  
+  // Selection & Sharing
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [expiresIn, setExpiresIn] = useState(60);
+  const [maxDownloads, setMaxDownloads] = useState(5);
+  const [shareLink, setShareLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  const [selectedFile, setSelectedFile] = useState("");
-  const [expiresInMinutes, setExpiresInMinutes] = useState(15);
-  const [maxDownloads, setMaxDownloads] = useState(1);
-
-  const [shareUrl, setShareUrl] = useState("");
-  const [shareError, setShareError] = useState("");
-  const [shareLoading, setShareLoading] = useState(false);
-
-  // socket connection
+  // 1. Initial Load & Real-time Sync
   useEffect(() => {
+    fetchFiles();
+
     const socket = io(API_BASE);
 
-    // Listen for real-time updates from Chokidar
-    socket.on("file_update", () => {
-      console.log("File system changed! Refreshing list...");
-      fetchFiles(); // Auto-refresh the list
+    socket.on("connect", () => setIsConnected(true));
+    socket.on("disconnect", () => setIsConnected(false));
+    
+    // Auto-refresh when files change on disk
+    socket.on("file_update", (data) => {
+      console.log(`Live Update: ${data.type} -> ${data.path}`);
+      fetchFiles(); 
     });
 
     return () => socket.disconnect();
   }, []);
 
-  // fetch file from backend
   const fetchFiles = async () => {
-    try {
-      setLoadingFiles(true);
-      setFilesError("");
-      const res = await axios.get(`${API_BASE}/api/files`);
-      setFiles(res.data.files || []);
-    } catch (err) {
-      console.error(err);
-      setFilesError("Failed to load files from Silo directory");
-    } finally {
-      setLoadingFiles(false);
-    }
-  };
+  try {
+    setLoading(true);
+    setError("");
+    const data = await getFiles();
+    setFiles(data);
+  } catch (err) {
+    console.error(err);
+    setError("Could not load files. Is the Silo Backend running?");
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    fetchFiles();
-  }, []);
+const generateLink = async () => {
+  if (!selectedFile) return;
+  try {
+    const result = await createShareLink({
+      filename: selectedFile,
+      expiresInMinutes: Number(expiresIn),
+      maxDownloads: Number(maxDownloads),
+    });
+    setShareLink(result.url);
+    setCopied(false);
+  } catch (err) {
+    console.error(err);
+    alert(err.response?.data?.error || "Failed to create link");
+  }
+};
 
-  const handleGenerateLink = async () => {
-    if (!selectedFile) {
-      setShareError("Please select a file first.");
-      return;
-    }
-
-    try {
-      setShareLoading(true);
-      setShareError("");
-      setShareUrl("");
-
-      const res = await axios.post(`${API_BASE}/api/share`, {
-        filename: selectedFile,
-        expiresInMinutes: Number(expiresInMinutes),
-        maxDownloads: Number(maxDownloads),
-      });
-
-      setShareUrl(res.data.url);
-    } catch (err) {
-      console.error(err);
-      if (err.response?.data?.error) {
-        setShareError(err.response.data.error);
-      } else {
-        setShareError("Failed to generate share link.");
-      }
-    } finally {
-      setShareLoading(false);
-    }
-  };
-
-  const handleCopy = async () => {
-    if (!shareUrl) return;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      alert("Link copied to clipboard.");
-    } catch (err) {
-      console.error("Clipboard error:", err);
-      alert("Could not copy link. Copy it manually.");
-    }
+  const copyToClipboard = async () => {
+    if (!shareLink) return;
+    await navigator.clipboard.writeText(shareLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div style={{ padding: "20px", fontFamily: "sans-serif", maxWidth: "800px", margin: "0 auto" }}>
-      <h1>Silo</h1>
-      <p>Secure file sharing with expiring links.</p>
-
-      <section style={{ marginBottom: "20px" }}>
-        <h2>Files in Silo directory</h2>
-        <button onClick={fetchFiles} disabled={loadingFiles}>
-          {loadingFiles ? "Refreshing..." : "Refresh files"}
-        </button>
-        {filesError && <p style={{ color: "red" }}>{filesError}</p>}
-        {files.length === 0 && !loadingFiles && (
-          <p>No files found. Add some files to your BASE_DIR folder.</p>
-        )}
-        {files.length > 0 && (
-          <ul>
-            {files.map((file) => (
-              <li key={file}>
-                <button
-                  onClick={() => setSelectedFile(file)}
-                  style={{
-                    border: selectedFile === file ? "2px solid #ffffffff" : "0px solid #373535ff",
-                    background: selectedFile === file ? "#025bffff" : "#2e3434",
-                    padding: "4px 8px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {file} {selectedFile === file && " (selected)"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section style={{ marginBottom: "20px" }}>
-        <h2>Create secure share link</h2>
-        <p>Selected file: <strong>{selectedFile || "None"}</strong></p>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            Expires in (minutes):{" "}
-            <input
-              type="number"
-              value={expiresInMinutes}
-              onChange={(e) => setExpiresInMinutes(e.target.value)}
-              style={{ width: "80px" }}
-              min={1}
-            />
-          </label>
+    <div className="app-container">
+      {/* HEADER */}
+      <header className="app-header">
+        <div className="brand">
+          <HardDrive size={24} className="brand-icon" />
+          <h1>Silo <span className="version">v1.1</span></h1>
         </div>
-
-        <div style={{ marginBottom: "10px" }}>
-          <label>
-            Max downloads:{" "}
-            <input
-              type="number"
-              value={maxDownloads}
-              onChange={(e) => setMaxDownloads(e.target.value)}
-              style={{ width: "80px" }}
-              min={1}
-            />
-          </label>
+        <div className={`status-badge ${isConnected ? "online" : "offline"}`}>
+          {isConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
+          <span>{isConnected ? "System Online" : "Disconnected"}</span>
         </div>
+      </header>
 
-        <button onClick={handleGenerateLink} disabled={shareLoading}>
-          {shareLoading ? "Generating..." : "Generate link"}
-        </button>
-
-        {shareError && <p style={{ color: "red" }}>{shareError}</p>}
-      </section>
-
-      <section>
-        <h2>Generated link</h2>
-        {shareUrl ? (
-          <div>
-            <p>You can share this URL:</p>
-            <code style={{ display: "block", wordBreak: "break-all", marginBottom: "10px" }}>
-              {shareUrl}
-            </code>
-            <button onClick={handleCopy}>Copy link</button>
+      <main className="main-content">
+        {/* LEFT: FILE BROWSER */}
+        <section className="file-browser card">
+          <div className="card-header">
+            <h2>Storage</h2>
+            <button onClick={fetchFiles} className="icon-btn" disabled={loading}>
+              <RefreshCw size={18} className={loading ? "spin" : ""} />
+            </button>
           </div>
-        ) : (
-          <p>No link generated yet.</p>
-        )}
-      </section>
+
+          {error && <div className="error-banner">{error}</div>}
+
+          <div className="file-list">
+            {files.length === 0 && !loading && (
+              <div className="empty-state">No files found in shared folder.</div>
+            )}
+            
+            {files.map((file) => (
+              <div 
+                key={file}
+                className={`file-item ${selectedFile === file ? "active" : ""}`}
+                onClick={() => {
+                  setSelectedFile(file);
+                  setShareLink(""); // Reset link when changing selection
+                }}
+              >
+                <File size={20} className="file-icon" />
+                <span className="file-name">{file}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* RIGHT: ACTION PANEL */}
+        <section className="action-panel">
+          <div className="card controls-card">
+            <div className="card-header">
+              <h2>Share Configuration</h2>
+            </div>
+            
+            {selectedFile ? (
+              <div className="control-form">
+                <div className="selected-preview">
+                  <File size={32} />
+                  <div className="file-info">
+                    <span className="label">Selected File</span>
+                    <span className="name">{selectedFile}</span>
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <label>Expires In (Minutes)</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={expiresIn}
+                    onChange={(e) => setExpiresIn(e.target.value)}
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label>Max Downloads</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={maxDownloads}
+                    onChange={(e) => setMaxDownloads(e.target.value)}
+                  />
+                </div>
+
+                <button className="primary-btn" onClick={generateLink}>
+                  <LinkIcon size={18} />
+                  Generate Secure Link
+                </button>
+              </div>
+            ) : (
+              <div className="empty-selection">
+                <p>Select a file to generate a share link.</p>
+              </div>
+            )}
+          </div>
+
+          {/* RESULT CARD */}
+          {shareLink && (
+            <div className="card result-card fade-in">
+              <div className="card-header">
+                <h2>Ready to Share</h2>
+              </div>
+              <div className="link-box">
+                <input type="text" readOnly value={shareLink} />
+                <button 
+                  className={`copy-btn ${copied ? "success" : ""}`} 
+                  onClick={copyToClipboard}
+                >
+                  {copied ? <CheckCircle size={24} /> : <Copy size={24} />}
+                </button>
+              </div>
+              <div className="link-meta">
+                <small>Expires in {expiresIn} mins • {maxDownloads} downloads max</small>
+              </div>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

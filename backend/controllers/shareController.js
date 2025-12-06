@@ -10,12 +10,23 @@ const isSafePath = (base, target) => {
   return resolvedTarget.startsWith(resolvedBase);
 };
 
+// Helper: Get public base URL for links
+const getBaseUrl = (req) => {
+  const envUrl = process.env.PUBLIC_BASE_URL;
+  if (envUrl && envUrl.trim().length > 0) {
+    // strip trailing slashes just in case
+    return envUrl.replace(/\/+$/, "");
+  }
+  const protocol = req.protocol;          // 'http' or 'https'
+  const host = req.get("host");           // e.g. '192.168.0.102:4000'
+  return `${protocol}://${host}`;
+};
+
 // Create a share link
 export const createShareLink = async (req, res) => {
   try {
     const baseDir = process.env.BASE_DIR;
     const jwtSecret = process.env.JWT_SECRET;
-    const PORT = process.env.PORT || 4000;
 
     if (!baseDir) {
       return res.status(500).json({ error: "BASE_DIR not configured" });
@@ -30,7 +41,7 @@ export const createShareLink = async (req, res) => {
       return res.status(400).json({ error: "filename is required" });
     }
 
-    // FIX: Security check moved INSIDE the function
+    // Security: prevent ../ tricks
     if (!isSafePath(baseDir, filename)) {
       return res.status(403).json({ error: "Access Denied: Invalid path" });
     }
@@ -59,7 +70,7 @@ export const createShareLink = async (req, res) => {
       expiresIn: `${expiresInMinutes}m`,
     });
 
-    const baseUrl = `http://localhost:${PORT}`;
+    const baseUrl = getBaseUrl(req);
     const url = `${baseUrl}/silo/download/${token}`;
 
     return res.json({ url, expiresAt, maxDownloads: link.maxDownloads });
@@ -98,9 +109,9 @@ export const downloadFile = async (req, res) => {
       return res.status(410).send("Download limit exceeded");
     }
 
-    // FIX: Add security check here too (Defense in Depth)
+    // Defense in depth: validate path again
     if (!isSafePath(baseDir, link.fileName)) {
-        return res.status(403).send("Access Denied: Invalid file path");
+      return res.status(403).send("Access Denied: Invalid file path");
     }
 
     const filePath = path.join(baseDir, link.fileName);

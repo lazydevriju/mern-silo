@@ -1,46 +1,66 @@
-# Silo 📦
+# Silo 📦  
 ### Secure, Self-Hosted Personal Cloud with Real-Time File Watching
 
-[![Docker](https://img.shields.io/badge/Docker-v24-blue.svg)](https://www.docker.com/)
-[![Node.js](https://img.shields.io/badge/Node.js-v22-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-v19-blue)](https://react.dev/)
+[![Docker](https://img.shields.io/badge/Docker-v24-blue.svg)]()
+[![Node.js](https://img.shields.io/badge/Node.js-v22-green.svg)]()
+[![React](https://img.shields.io/badge/React-v19-blue.svg)]()
+![Silo Version](https://img.shields.io/badge/release-v1.2.0-informational)
 [![License](https://img.shields.io/badge/license-ISC-lightgrey.svg)]()
 
-**Silo** is a full-stack, microservices-ready application that turns any folder on your computer into a secure, shareable cloud storage system. It features **real-time file synchronization** (using WebSockets & Kernel-level watching), **secure expiring links**, and a fully containerized **Docker** architecture.
+**Silo** is a secure, self-hosted mini-cloud platform that exposes a folder on your machine as a private storage service. It provides:
+
+- Expiring secure share links  
+- Real-time file watching  
+- LAN-based access from any device  
+- Safe, containerized deployment with Docker  
+
+This project follows a modular, scalable architecture suitable for real deployment and future multi-user expansion.
 
 ---
 
-## 🚀 Key Features
+# 🚀 Key Features
 
-* **🔒 Secure Link Generation:** Create time-limited, signed URLs (JWT) to share specific files without exposing your entire drive.
-* **👀 Real-Time I/O:** The UI updates instantly when files are added or deleted on the host disk (powered by `Chokidar` + `Socket.io`).
-* **🛡️ Security First:** Implements robust protection against **Path Traversal Attacks** to ensure system files remain isolated.
-* **⚡ Efficient Streaming:** Uses Node.js Streams to handle large file downloads (movies, archives) efficiently without overloading server RAM.
-* **🐳 Fully Dockerized:** Runs in an isolated environment separating 'State' (Files/DB) from 'Stateless Code' (App) for maximum portability.
+- **🔒 Secure Link Generation**  
+  Create expiring, JWT-signed URLs for file downloads. No folder outside the configured base directory is ever exposed.
+
+- **👀 Real-Time Disk Watching**  
+  Using `Chokidar` and `Socket.io`, Silo updates the frontend instantly when files are added/removed.
+
+- **🛡️ Path Traversal Protection**  
+  Blocks attempts like `../../system32` using resolved path comparison.
+
+- **⚡ Efficient File Streaming**  
+  Large files are streamed using Node.js pipes without blocking memory.
+
+- **🌐 LAN Access Ready (v1.2.0)**  
+  Access Silo from phones and laptops on the same Wi-Fi network.
+
+- **🐳 Fully Dockerized**  
+  No Node.js, MongoDB, or local tool installations required. Everything runs through Docker Compose.
 
 ---
 
-## 🛠️ Tech Stack
+# 🛠️ Tech Stack
 
 ### **Frontend**
-* **React 19** (Vite Build Tool)
-* **Axios** (API Requests)
-* **Socket.io-client** (Real-time events)
+- React 19 (Vite)
+- Axios
+- Socket.io Client
 
 ### **Backend**
-* **Node.js v22** (ES Modules)
-* **Express.js** (REST API)
-* **Socket.io** (WebSocket Server)
-* **Chokidar** (File System Watcher)
-* **JWT** (Stateless Authentication)
+- Node.js v22
+- Express.js
+- Socket.io
+- Chokidar
+- JWT
 
 ### **Infrastructure**
-* **MongoDB** (Metadata & Link Tracking)
-* **Docker & Docker Compose** (Container Orchestration)
+- MongoDB (Metadata store)
+- Docker & Docker Compose
 
 ---
 
-## 🏗️ Architecture
+# 🏗️ Project Architecture
 
 The project follows a modular structure suitable for scaling:
 
@@ -50,12 +70,16 @@ silo/
 ├── .gitignore                         # Git ignore rules
 ├── .gitattributes                     # Git attributes
 ├── README.md                          # Project documentation
+├── CHANGELOG.md                       # Project changelog
+├── .env
+├── .env.example                       # Environment variables template
+├── version.json
 │
 ├── backend/                           # Node.js Express API
 │   ├── Dockerfile                     # Backend container image
 │   ├── package.json                   # Backend dependencies
 │   ├── server.js                      # Express server & Socket.io setup
-│   ├── .env.example                   # Environment variables template
+│   ├── .env                           
 │   │
 │   ├── config/
 │   │   └── db.js                      # MongoDB connection
@@ -85,7 +109,14 @@ silo/
 │       ├── main.jsx                   # React DOM render
 │       ├── App.jsx                    # Main application component
 │       ├── index.css                  # Global styles
-│       └── App.css                    # App-specific styles
+│       ├── App.css                    # App-specific styles
+|       ├── .env
+│       │
+│       └── api/
+│           ├── client.js              # Frontend UI for browsing files and creating share links
+│           ├── files.jsx              # Generates secure expiring download links
+│           └── share.js               # Global styles
+|
 │
 └── .dockerignore                      # Docker build ignore rules
 ```
@@ -214,14 +245,18 @@ If a file lies outside the allowed folder, Silo will refuse access.
 
 **6. Future Improvements**
 
- * User Authentication (Login/Register)
+ * User Authentication (Host + Client accounts)
 
  * Drag-and-Drop File Uploads
 
- * Rate Limiting for Download Links
+ * Remote Upload Support
 
  * HTTPS for Production Deployment
+
+ * Multi-device link syncing
 
 Author
 
 Mayukh Neogi
+Built with unnecessary caffeine and questionable motivation.
+😉

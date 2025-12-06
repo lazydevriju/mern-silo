@@ -17,19 +17,22 @@ services:
     ports:
       - "${PORT:-4000}:4000"
     environment:
-      - PORT=4000
+      - PORT=${PORT:-4000}
       - MONGODB_URI=mongodb://mongo:27017/silo
       - JWT_SECRET=${JWT_SECRET:-fallback_insecure_secret}
       - BASE_DIR=/app/media
+      # New: LAN-aware URLs for link generation & CORS
+      - PUBLIC_BASE_URL=http://${HOST_LAN_IP:-localhost}:${PORT:-4000}
+      - FRONTEND_URL=http://${HOST_LAN_IP:-localhost}:5173
     env_file:
       - .env
     depends_on:
       - mongo
     volumes:
-      # Mount source code for live updates
+      # Mount backend source for dev
       - ./backend:/app
       - /app/node_modules
-      # ⚠️ CHANGE LEFT SIDE TO YOUR REAL COMPUTER FOLDER ⚠️
+      # Map host folder → container media dir
       - ${SILO_HOST_FOLDER:-./silo-data}:/app/media
 
   # 3. Silo Frontend
@@ -39,7 +42,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_BASE=http://localhost:${PORT:-4000}
+      # Critical: API base must be host LAN IP, not localhost
+      - VITE_API_BASE=http://${HOST_LAN_IP:-localhost}:${PORT:-4000}
     env_file:
       - .env
     depends_on:

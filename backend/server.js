@@ -1,4 +1,4 @@
-import express from"express";
+import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import chokidar from "chokidar";
@@ -13,37 +13,60 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Setup Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173", // Your frontend URL
-    methods: ["GET", "POST"],
-  },
-});
-
 const PORT = process.env.PORT || 4000;
 const BASE_DIR = process.env.BASE_DIR;
 
-app.use(cors({ origin: "http://localhost:5173" }));
+// Build origins
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
+const clean = (str) => str?.replace(/\/+$/, "");
+
+const allowedOrigins = [
+  clean(FRONTEND_URL),
+  clean(PUBLIC_BASE_URL),
+].filter(Boolean);
+
+console.log("Allowed CORS Origins:", allowedOrigins);
+
+// Global CORS
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(clean(origin))) return cb(null, true);
+
+      console.log("❌ Blocked by CORS:", origin);
+      return cb(new Error("CORS Not Allowed: " + origin));
+    },
+  })
+);
+
 app.use(express.json());
+
+// Socket.io with same CORS policy
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"]
+  }
+});
 
 // Routes
 app.use("/api/files", fileRoutes);
 app.use("/api/share", shareRoutes);
-app.use("/silo", shareRoutes); // This handles the download links
+app.use("/silo", shareRoutes);
 
 // --- REAL-TIME FILE WATCHER ---
 if (BASE_DIR) {
-  console.log(`👀 Watching for file changes in: ${BASE_DIR}`);
+  console.log(`👀 Watching folder: ${BASE_DIR}`);
 
-  // FIX: typo 'watchQB' -> 'watch'
   const watcher = chokidar.watch(BASE_DIR, {
     persistent: true,
-    ignoreInitial: true, // Don't spam events on startup
-    depth: 0, // Only watch top-level files (optional)
+    ignoreInitial: true,
+    depth: 0,
   });
 
-  // Emit events to frontend when files change
   watcher.on("add", (path) => {
     console.log(`File added: ${path}`);
     io.emit("file_update", { type: "add", path });
@@ -55,10 +78,10 @@ if (BASE_DIR) {
   });
 }
 
-// Start Server
+// Start
 const start = async () => {
   await connectDB();
-  server.listen(PORT, () => {
+  server.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Silo backend running on port ${PORT}`);
   });
 };
