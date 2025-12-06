@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import { 
   File, 
@@ -29,6 +29,7 @@ function App() {
   const [maxDownloads, setMaxDownloads] = useState(5);
   const [shareLink, setShareLink] = useState("");
   const [copied, setCopied] = useState(false);
+  const linkInputRef = useRef(null);
 
   // 1. Initial Load & Real-time Sync
   useEffect(() => {
@@ -79,11 +80,33 @@ const generateLink = async () => {
 };
 
   const copyToClipboard = async () => {
-    if (!shareLink) return;
-    await navigator.clipboard.writeText(shareLink);
+  if (!shareLink) return;
+
+  try {
+    // Preferred: secure context clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(shareLink);
+    } else if (linkInputRef.current) {
+      // Fallback: select text + execCommand
+      const input = linkInputRef.current;
+      input.focus();
+      input.select();
+      const successful = document.execCommand("copy");
+      if (!successful) {
+        throw new Error("execCommand copy failed");
+      }
+      // Clear selection
+      window.getSelection()?.removeAllRanges();
+    }
+
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  } catch (err) {
+    console.error("Clipboard copy failed:", err);
+    // Last fallback: user can at least manually select
+    alert("Copy not allowed by browser. Long-press the link and copy manually.");
+  }
+};
 
   return (
     <div className="app-container">
@@ -188,7 +211,13 @@ const generateLink = async () => {
                 <h2>Ready to Share</h2>
               </div>
               <div className="link-box">
-                <input type="text" readOnly value={shareLink} />
+                <input
+                  type="text"
+                  readOnly
+                  value={shareLink}
+                  ref={linkInputRef}
+                />
+                
                 <button 
                   className={`copy-btn ${copied ? "success" : ""}`} 
                   onClick={copyToClipboard}
