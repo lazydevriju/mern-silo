@@ -217,7 +217,7 @@ const generateLink = async () => {
                   value={shareLink}
                   ref={linkInputRef}
                 />
-                
+
                 <button 
                   className={`copy-btn ${copied ? "success" : ""}`} 
                   onClick={copyToClipboard}
